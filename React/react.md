@@ -60,19 +60,18 @@ const Row = React.memo(({ row }) => (
     - batch the thransactions updates to reduce the frequent re-rendering 
 
 `ts
-    const [displayData, setDisplayData] = useState([]);
-    const buffer = useRef([]);
+const [displayData, setDisplayData] = useState([]);
+const buffer = useRef([]);
 
-    useEffect(() => {
+useEffect(() => {
     const interval = setInterval(() => {
-        if (buffer.current.length > 0) {
+    if (buffer.current.length > 0) {
         setDisplayData(prev => [...prev, ...buffer.current]);
         buffer.current = [];
-        }
+    }
     }, 100); // 10 updates/sec
     return () => clearInterval(interval);
-    }, []);
-    `
+}, []);`
 **Use Web Workers for Heavy Calculations**
 - compute derived matrics in Web Worker 
 - keeps the main UI thread free
