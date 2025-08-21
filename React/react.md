@@ -59,7 +59,7 @@ const Row = React.memo(({ row }) => (
     - use async transaction updates if use agrid like libs
     - batch the thransactions updates to reduce the frequent re-rendering 
 
-`ts
+```
 const [displayData, setDisplayData] = useState([]);
 const buffer = useRef([]);
 
@@ -71,7 +71,8 @@ useEffect(() => {
     }
     }, 100); // 10 updates/sec
     return () => clearInterval(interval);
-}, []);`
+}, []);```
+
 **Use Web Workers for Heavy Calculations**
 - compute derived matrics in Web Worker 
 - keeps the main UI thread free
