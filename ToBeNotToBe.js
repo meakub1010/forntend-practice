@@ -24,3 +24,4 @@ function myExpect(value) {
 
 console.log(myExpect(3).toBe(3)); // Test passed
 console.log(myExpect(3).toBe(5)); // Test failed, expected 5 but got 3
+console.log(myExpect(3).not.toBe(5)); // Test passed

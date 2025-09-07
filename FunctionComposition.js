@@ -113,3 +113,21 @@ const createSalad = (size, dressing) => {
         ...ready()
     }
 }
+
+
+// COMPOSITION(right to left) VS PIPE(left to right)
+
+const addUp = x => x + 1;
+const multiply = x => x * 2;
+
+const compose2 = (...fns) => x => fns.reduceRight((acc, fn) => fn(acc), x);
+const pipe = (...fns) => x => fns.reduce((acc, fn) => fn(acc), x);
+
+const addThenMultiply = compose2(multiply, addUp); // executes right to left
+console.log(addThenMultiply(5)); // (5 + 1) * 2 = 12
+
+const multiplyThenAdd = pipe(multiply, addUp); // executes left to right
+console.log(multiplyThenAdd(5)); // (5 * 2) + 1 = 11
+
+
+const composeX = (...fns) => x => fns.reduceRight((acc, fn) => fn(acc), x) 

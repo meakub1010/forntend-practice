@@ -78,3 +78,69 @@ setTimeout(() => {
     console.log('Unsubscribing');
     sub.unsubscribe();
 }, 200);
+
+
+
+
+// Concepts
+/*
+An Observable in JavaScript is a data producer that emits multiple values over time, which you can subscribe to and react to as they arrive. 
+Think of it as a stream of data—similar to how a Promise represents a single future value, an Observable can emit many values over time.
+
+Observables are lazy, meaning they don’t start producing values until you subscribe. 
+They are commonly used in RxJS, Angular, and reactive programming.
+
+
+🔹 Key Concepts
+
+Observable – defines the stream of data.
+
+Observer – object with callbacks (next, error, complete) that reacts to data.
+
+Subscription – connection between the Observable and the Observer; used to unsubscribe.
+
+Operators – methods like map, filter, mergeMap to transform the stream.
+
+
+🔹 Why Observables?
+
+Can emit multiple values over time (unlike a Promise).
+
+Can be cancelled (unsubscribe).
+
+Support operators for functional composition of async streams.
+
+Great for real-time data, user events, or API polling.
+
+🔹 Analogy
+
+Promise → “I will give you one value in the future.”
+
+Observable → “Here’s a stream of values over time, and you can react to each one.”
+
+
+*/
+
+
+import { Observable } from 'rxjs';
+
+// Create an Observable that emits 1, 2, 3 over time
+const numbers$ = new Observable(subscriber => {
+  subscriber.next(1);
+  subscriber.next(2);
+  subscriber.next(3);
+  subscriber.complete(); // stream ends
+});
+
+// Observer subscribes to Observable
+numbers$.subscribe({
+  next: value => console.log('Next:', value),
+  error: err => console.error('Error:', err),
+  complete: () => console.log('Done')
+});
+
+// Output:
+// Next: 1
+// Next: 2
+// Next: 3
+// Done 

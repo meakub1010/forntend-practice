@@ -60,7 +60,32 @@ const reduced = [1,2,3].reducedValue((acc, val, i, arr) => {
     return acc + val + i + arr[1];
 }, 3);
 
-console.log(reduced);
+console.log(reduced); //
+
+// FLATTEN AN ARRAY
+Array.prototype.myflat = function(depth = Infinity) {
+    let flattened = [];
+    const flatten = (arr, depth) => {
+        for(let i = 0; i < arr.length; i++){
+            if(Array.isArray(arr[i]) && depth > 0){
+                flatten(arr[i], depth - 1);
+            }
+            else {
+                flattened.push(arr[i]);
+            }
+        }
+    }
+    flatten(this, depth);
+
+    return flattened;
+}
+
+console.log([1,2,[3,4,[5,6]]].myflat());
 
 
-
+Array.prototype.last = function(){
+    if(this.length === 0) return undefined;
+    return this[this.length-1];
+}
+console.log('last',[1,2,3].last());
+console.log('last',[].last());

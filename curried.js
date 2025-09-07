@@ -41,4 +41,5 @@ const multiplyByTwenty = multiply(20);
 
 console.log(multiplyByTen(100)); // Output: 1000
 console.log(multiplyByTwenty(100)); // Output: 2000
+console.log(multiply(5)(6)); // Output: 30
 

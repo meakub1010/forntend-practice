@@ -798,9 +798,96 @@ Question: How would you architect it so the modal is not tightly coupled to pare
 
 3️⃣ Asynchronous Data & Side Effects
 
-Scenario: You have multiple concurrent API calls for a dashboard; new user actions should cancel outdated calls.
+### Scenario: You have multiple concurrent API calls for a dashboard; new user actions should cancel outdated calls.
 
-Question: How would you implement this in React using hooks?
+**Question: How would you implement this in React using hooks?**
+
+**Using AbortController in a custom hook**
+```ts
+import { useEffect, useRef, useState } from "react";
+
+function useCancellableFetch(url: string, deps: any[] = []) {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    setLoading(true);
+    fetch(url, { signal: abortController.signal })
+      .then((res) => res.json())
+      .then((data) => setData(data))
+      .catch((err) => {
+        if (err.name !== "AbortError") setError(err);
+      })
+      .finally(() => setLoading(false));
+
+    return () => abortController.abort(); // Cancel on deps change/unmount
+  }, deps);
+
+  return { data, error, loading, cancel: () => abortControllerRef.current?.abort() };
+}
+```
+## With this how can we handle multiple concurrent requests
+If you need multiple API calls for different widgets but want to cancel all outdated ones on user action:
+- use AbortControllerRef as array
+    ```ts
+    const abortControllers = useRef<AbortController[]>([]);```
+- for each request push that ref into controllerRef array
+- later based on user action iterate over the refs array and cancel them
+- also during return we can iterate and abort all request
+```ts
+function useDashboardData(params) {
+  const abortControllers = useRef<AbortController[]>([]);
+  const [data, setData] = useState({});
+
+  useEffect(() => {
+    // Cancel all previous calls
+    abortControllers.current.forEach(ctrl => ctrl.abort());
+    abortControllers.current = [];
+
+    const endpoints = ["/api/chart1", "/api/chart2", "/api/chart3"];
+    const promises = endpoints.map((endpoint) => {
+      const ctrl = new AbortController();
+      abortControllers.current.push(ctrl);
+      return fetch(`${endpoint}?param=${params}`, { signal: ctrl.signal }).then(res => res.json());
+    });
+
+    Promise.allSettled(promises).then(results => {
+      const formatted = results.map(r => (r.status === "fulfilled" ? r.value : null));
+      setData({ chart1: formatted[0], chart2: formatted[1], chart3: formatted[2] });
+    });
+
+    return () => abortControllers.current.forEach(ctrl => ctrl.abort());
+  }, [params]);
+
+  return data;
+}
+
+```
+
+### Alternative approach could be using React Query/TanStack Query
+If you use React Query (TanStack), it provides a built-in way to cancel outdated requests automatically:
+```ts
+import { useQuery } from "@tanstack/react-query";
+
+function Dashboard({ query }) {
+  const { data } = useQuery({
+    queryKey: ["dashboardData", query],
+    queryFn: () => fetch(`/api/data?q=${query}`).then(r => r.json()),
+    staleTime: 0, 
+    gcTime: 0
+  });
+
+  return <pre>{JSON.stringify(data)}</pre>;
+}
+```
+React Query automatically cancels the previous fetch when the queryKey changes.
+
 
 Scenario: Some API calls are slow and block the UI update.
 
@@ -869,3 +956,120 @@ Question: How would you architect your React components for efficient rendering 
 Scenario: You want your app to load instantly on slow networks.
 
 Question: How would you leverage code-splitting, SSR, or PWA features?
+
+
+### Why Vite and esbuild is faster than webpack?
+**1. Development Mode:**
+Webpack
+
+**How it works:**
+
+- Bundles your entire app before serving.
+
+- Uses a single build pipeline that processes all files upfront.
+
+- Requires a full rebuild or large chunk re-compilation on every change.
+
+**Consequence:**
+
+- Slow startup time (especially for large apps).
+
+- Hot Module Replacement (HMR) is slower because changes trigger re-bundling.
+
+- Vite (uses esbuild for dev)
+
+**How it works:**
+
+- Leverages native ES modules (ESM) in the browser.
+
+- No upfront bundling; serves source files directly.
+
+- On file change, only the changed module is recompiled, not the entire bundle.
+
+- Uses esbuild (written in Go) for lightning-fast transpilation.
+
+**Consequence:**
+
+Instant server start (even for large projects).
+
+Near-instant HMR.
+
+2. Build Tooling:
+Webpack
+
+Written in JavaScript.
+
+Transformation and bundling happen in a single-threaded process.
+
+Heavy on plugin/loader chains, which increases build time.
+
+esbuild
+
+Written in Go (compiled, not interpreted).
+
+Highly optimized and uses parallelism (multi-core).
+
+Extremely fast at transforming TypeScript/JSX (10-100x faster than JS-based tools).
+
+Vite
+
+Uses esbuild for dev and Rollup for production build.
+
+esbuild handles dev speed.
+
+Rollup handles tree-shaking & production optimizations.
+
+3. Caching
+
+Vite aggressively caches dependencies using esbuild output.
+
+Dependencies rarely change → Only source files recompiled during HMR.
+
+Webpack can cache too, but configuration is heavier and slower to warm up.
+
+4. Output Strategy
+
+Webpack: Full bundle, monolithic.
+
+Vite: Uses lazy loading of modules and on-demand compilation during development.
+
+Why is esbuild itself so fast?
+
+Written in Go (compiled, not interpreted like JS).
+
+Uses parallelism for file processing.
+
+Avoids unnecessary AST transformations compared to Babel/Webpack loaders.
+
+Optimized for minimal I/O and memory usage.
+
+### For simple Counter App how Vite and webpack will handle the build process?
+
+
+## Concrete Example: Simple Counter App
+
+**Files:**
+
+index.jsx → imports App.jsx
+App.jsx → imports Counter.jsx
+Counter.jsx → uses useState
+
+**With Webpack:**
+
+- Webpack bundles index.jsx + App.jsx + Counter.jsx into one file (bundle.js) before serving.
+
+- Browser loads bundle.js.
+
+- Change Counter.jsx → Webpack rebuilds the relevant bundle and pushes via HMR.
+
+**With Vite:**
+
+- Dev server starts instantly.
+
+- Browser requests /index.jsx → Vite transpiles and serves.
+
+- Browser requests /App.jsx → served on-demand.
+
+- Browser requests /Counter.jsx → served on-demand.
+
+- Change Counter.jsx → only that file is transpiled and re-sent.
